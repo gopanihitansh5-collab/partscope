@@ -27,7 +27,7 @@ class Manufacturer(Base):
     country: Mapped[str | None] = mapped_column(String(80))
     is_synthetic: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    parts: Mapped[list["Part"]] = relationship(back_populates="manufacturer")
+    parts: Mapped[list[Part]] = relationship(back_populates="manufacturer")
 
 
 class Category(Base):
@@ -39,7 +39,7 @@ class Category(Base):
     description: Mapped[str | None] = mapped_column(Text)
     criticality: Mapped[str] = mapped_column(String(20), default="standard")
 
-    parts: Mapped[list["Part"]] = relationship(back_populates="category")
+    parts: Mapped[list[Part]] = relationship(back_populates="category")
 
 
 class EquipmentModel(Base):
@@ -74,7 +74,7 @@ class Part(Base):
 
     manufacturer: Mapped[Manufacturer | None] = relationship(back_populates="parts", lazy="joined")
     category: Mapped[Category | None] = relationship(back_populates="parts", lazy="joined")
-    specifications: Mapped[list["PartSpecification"]] = relationship(
+    specifications: Mapped[list[PartSpecification]] = relationship(
         back_populates="part", cascade="all, delete-orphan"
     )
 
@@ -99,7 +99,9 @@ class Compatibility(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"), index=True)
     related_part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"), index=True)
-    relationship: Mapped[str] = mapped_column(String(24))  # compatible|replaces|supersedes
+    relationship_type: Mapped[str] = mapped_column(
+        "relationship", String(24)
+    )  # compatible|replaces|supersedes
     confidence: Mapped[float] = mapped_column(Float, default=0.8)
     source: Mapped[str] = mapped_column(String(160), default="synthetic-manual")
     source_document_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id"))

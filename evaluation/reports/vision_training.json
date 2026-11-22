@@ -1,0 +1,26 @@
+{
+  "top1_accuracy": 0.4836,
+  "top5_accuracy": 0.7131,
+  "macro_f1": 0.4964,
+  "per_class_recall": {
+    "bearings": 0.5,
+    "brake-pads": 0.3636,
+    "cabin-seats": 0.8,
+    "cooling-fans": 0.8,
+    "drive-belts": 0.4286,
+    "electrical-relays": 0.8,
+    "fasteners": 0.4444,
+    "filters": 0.8889,
+    "hydraulic-hoses": 0.5,
+    "hydraulic-pumps": 0.5,
+    "lighting": 0.6667,
+    "seals-gaskets": 0.3333,
+    "sensors": 0.1429,
+    "transmission-gears": 0.3,
+    "wheels-tires": 0.1429
+  },
+  "latency_ms_p50": 5.87,
+  "latency_ms_p95": 8.35,
+  "samples": 122,
+  "split": "20% held out by part hash"
+}

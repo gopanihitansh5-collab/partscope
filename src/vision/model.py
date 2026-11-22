@@ -58,7 +58,7 @@ class VisionBaseline:
         ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top_k]
 
         lookup = {
-            pn: (lab, cat) for pn, lab, cat in zip(self.part_numbers, self.labels, self.categories)
+            pn: (lab, cat) for pn, lab, cat in zip(self.part_numbers, self.labels, self.categories, strict=False)
         }
         candidates: list[Candidate] = []
         for part_number, raw in ranked:
@@ -110,7 +110,7 @@ class VisionBaseline:
         return directory
 
     @classmethod
-    def load(cls, directory: Path) -> "VisionBaseline":
+    def load(cls, directory: Path) -> VisionBaseline:
         npz_path = directory / "embeddings.npz"
         meta_path = directory / "metadata.json"
         if not npz_path.exists() or not meta_path.exists():

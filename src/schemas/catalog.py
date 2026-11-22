@@ -52,7 +52,7 @@ class PartSummary(ORMModel):
 
 class CompatibilityOut(ORMModel):
     id: int
-    relationship: str
+    relationship: str = Field(validation_alias="relationship_type")
     confidence: float
     source: str
     source_document_id: int | None = None
@@ -66,7 +66,7 @@ class PartDetail(PartSummary):
     specifications: list[SpecificationOut] = Field(default_factory=list)
     compatibilities: list[CompatibilityOut] = Field(default_factory=list)
     equipment_models: list[EquipmentModelOut] = Field(default_factory=list)
-    inventory: list["InventoryOut"] = Field(default_factory=list)
+    inventory: list[InventoryOut] = Field(default_factory=list)
     superseded_by: PartSummary | None = None
 
 

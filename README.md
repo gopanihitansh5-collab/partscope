@@ -128,7 +128,7 @@ flowchart TB
     subgraph AI["Model layer"]
         VM["Vision baseline<br/>(descriptor + k-NN → ONNX/CNN slot)"]
         EM["Embedding + reranker<br/>(TF-IDF now → MiniLM/BGE slot)"]
-        FM["Demand model<br/>(seasonal baseline + ridge/LightGBM)"]
+        FM["Demand model<br/>(seasonal baseline + gradient-boosted tabular)"]
     end
 
     subgraph Data
@@ -226,7 +226,7 @@ sequenceDiagram
 | Decision | Why | Trade-off |
 |---|---|---|
 | **Deterministic evidence before generation** | Compatibility and stock claims must be defensible; an LLM must never invent them. | Less conversational flexibility; answers are structured and occasionally refuse. |
-| **Baselines first (k-NN vision, TF-IDF retrieval, seasonal + ridge forecast)** | A measurable baseline beats an opaque model hidden behind a chat UI. Every later model must beat it on a fixed split. | Lower peak accuracy than a fine-tuned transformer until upgrade artifacts land. |
+| **Baselines first (k-NN vision, TF-IDF retrieval, seasonal + gradient-boosted forecast)** | A measurable baseline beats an opaque model hidden behind a chat UI. Every later model must beat it on a fixed split. | Lower peak accuracy than a fine-tuned transformer until upgrade artifacts land. |
 | **Modular monolith, not microservices** | One container deploys and debugs easily; domain boundaries stay clean. | Requires discipline to keep modules decoupled. |
 | **PostgreSQL as the source of truth; graph as an abstraction** | Relational integrity for catalog/inventory; graph traversal is indexed adjacency until Neo4j is justified. | Deep multi-hop traversal is slower than a native graph database at very large scale. |
 | **SQLite default for local development** | `git clone` → working stack with no Docker or database install. | SQLite-specific pragmas; CI also runs PostgreSQL for parity. |
@@ -261,7 +261,7 @@ sequenceDiagram
 
 **Backend** — Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, structlog, Tenacity, HTTPX, Prometheus client.
 
-**AI/ML** — NumPy, Pillow, scikit-learn, joblib, LangGraph/LangChain core. The model layer is adapter-based: the CPU descriptor + k-NN vision baseline, TF-IDF retrieval baseline and ridge/seasonal forecasting baseline are production-quality reference implementations that can be replaced by ONNX Runtime, OpenVINO, TensorRT, `timm`, HuggingFace Transformers or LightGBM without changing the API.
+**AI/ML** — NumPy, Pillow, scikit-learn, joblib, LangGraph/LangChain core. The model layer is adapter-based: the CPU descriptor + k-NN vision baseline, TF-IDF retrieval baseline and gradient-boosted/seasonal forecasting baseline are production-quality reference implementations that can be replaced by ONNX Runtime, OpenVINO, TensorRT, `timm`, HuggingFace Transformers or LightGBM without changing the API.
 
 **Data** — SQLite locally, PostgreSQL 16 + pgvector in deployment, filesystem object storage locally, GCS/S3 in deployment.
 
@@ -473,19 +473,38 @@ All demo records are flagged as generated. Metrics produced against this dataset
 
 ---
 
+## Measured baselines
+
+These numbers come from the bundled synthetic dataset and are reproduced by `make train` / `make eval`. They validate the pipeline and the evaluation harness; they are not accuracy claims for a real catalog.
+
+| Model | Metric | Result |
+|---|---|---|
+| Vision (descriptor + k-NN) | Top-1 / Top-5 category accuracy | **48.4% / 71.3%** on 122 held-out renders |
+| Vision | Macro F1 | **0.496** |
+| Vision | Latency (P50 / P95, CPU) | **5.9 ms / 8.4 ms** |
+| Forecast (gradient boosting) | MAE vs seasonal naive | **5.57 vs 7.03** (−20.8%) |
+| Forecast | RMSE vs seasonal naive | **7.75 vs 9.61** |
+| Forecast | MAPE vs seasonal naive | **24.4 vs 27.1** |
+| Forecast | 80% interval coverage | **81.2%** (target 80%) |
+
+Reports are written to `evaluation/reports/` and registered model versions are visible at `GET /api/v1/admin/models`.
+
+---
+
 ## Project status
 
-Active development. The backend foundation, data layer and demo dataset are complete; the model, agent and frontend layers are being built and verified end-to-end.
+Active development, verified end-to-end on the bundled dataset. The API, data layer, vision baseline, compatibility graph, retrieval, forecasting and LangGraph agent are running; the web experience and deployment hardening are in progress.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Monorepo, config, database, models, demo data, CI | ✅ Complete |
-| 2 | Catalog search, upload, vision baseline, ONNX-ready runner | 🚧 In progress |
-| 3 | Compatibility graph, document ingestion, Graph RAG | 🚧 In progress |
-| 4 | Demand forecasting, intervals, shortage risk | 🚧 In progress |
-| 5 | LangGraph agent, typed tools, trace + SSE | 🚧 In progress |
+| 1 | Monorepo, config, database, models, demo data | ✅ Complete |
+| 2 | Catalog search, upload, vision baseline, evaluation | ✅ Complete |
+| 3 | Compatibility graph, document ingestion, Graph RAG | ✅ Complete |
+| 4 | Demand forecasting, intervals, shortage risk, evaluation | ✅ Complete |
+| 5 | LangGraph agent, typed tools, persisted trace + SSE | ✅ Complete |
 | 6 | Observability, hardening, deployment, runbook | 🚧 In progress |
 | 7 | Frontend experience (search, identify, chat, forecast, admin) | 🚧 In progress |
+| 8 | CI, container stack, end-to-end tests | 🚧 In progress |
 
 This table is updated as each phase is verified. Nothing is marked complete until it runs end-to-end and has tests.
 

@@ -31,6 +31,7 @@ seed:
 
 train:
 	$(PYBIN) -m training.vision.train
+	$(PYBIN) -m training.forecasting.train
 
 eval:
 	$(PYBIN) -m evaluation.run_all

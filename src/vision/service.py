@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
@@ -102,6 +103,80 @@ def identify(session: Session, path: Path, top_k: int | None = None) -> VisionId
         review_required=low_confidence,
         warnings=warnings,
     )
+
+
+def evaluate_holdout(session: Session, top_k: int = 5) -> dict:
+    import json
+    import statistics
+
+    from sklearn.metrics import f1_score, recall_score
+
+    model = load_model()
+    dataset_dir = settings.artifact_path / "vision" / "dataset" / "all"
+    if not dataset_dir.exists():
+        raise ValueError("Vision dataset not found. Run the seed script first.")
+
+    y_true: list[str] = []
+    y_pred: list[str] = []
+    top5_hits = 0
+    latencies: list[float] = []
+    per_class_correct: dict[str, int] = {}
+    per_class_total: dict[str, int] = {}
+
+    for path in sorted(dataset_dir.glob("*/*.png")):
+        category = path.parent.name
+        if int(hashlib.sha256(path.stem.encode()).hexdigest()[:8], 16) % 5 != 0:
+            continue
+        started = time.perf_counter()
+        candidates = model.predict(open_image(path), top_k=max(top_k, 5))
+        latencies.append((time.perf_counter() - started) * 1000)
+
+        predicted = candidates[0].category if candidates else "unknown"
+        y_true.append(category)
+        y_pred.append(predicted)
+        per_class_total[category] = per_class_total.get(category, 0) + 1
+        if predicted == category:
+            per_class_correct[category] = per_class_correct.get(category, 0) + 1
+        if any(c.category == category for c in candidates[:5]):
+            top5_hits += 1
+
+    if not y_true:
+        raise ValueError("No held-out images found. Run the seed script first.")
+
+    samples = len(y_true)
+    report = {
+        "dataset": "synthetic renders, 20% held out by part hash",
+        "samples": samples,
+        "top1_accuracy": round(sum(1 for t, p in zip(y_true, y_pred, strict=False) if t == p) / samples, 4),
+        "top5_accuracy": round(top5_hits / samples, 4),
+        "macro_f1": round(float(f1_score(y_true, y_pred, average="macro", zero_division=0)), 4),
+        "per_class_recall": {
+            label: round(float(value), 4)
+            for label, value in zip(
+                sorted(per_class_total),
+                recall_score(
+                    y_true,
+                    y_pred,
+                    labels=sorted(per_class_total),
+                    average=None,
+                    zero_division=0,
+                ), strict=False,
+            )
+        },
+        "latency_ms_p50": round(statistics.median(latencies), 2),
+        "latency_ms_p95": round(
+            sorted(latencies)[int(len(latencies) * 0.95) - 1] if latencies else 0.0, 2
+        ),
+        "model_name": model.name,
+        "model_version": model.version,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+    report_dir = settings.artifact_path.parent / "evaluation" / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    path = report_dir / "vision_eval.json"
+    path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    report["report_path"] = str(path)
+    return report
 
 
 def similar(session: Session, path: Path, top_k: int = 5) -> SimilarImageResponse:

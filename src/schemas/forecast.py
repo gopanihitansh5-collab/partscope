@@ -4,6 +4,8 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
+from src.schemas.common import ORMModel
+
 
 class ForecastRequest(BaseModel):
     part_id: int | None = None
@@ -53,7 +55,7 @@ class ForecastEvaluateResponse(BaseModel):
     report_path: str | None = None
 
 
-class ModelVersionOut(BaseModel):
+class ModelVersionOut(ORMModel):
     id: int
     name: str
     version: str

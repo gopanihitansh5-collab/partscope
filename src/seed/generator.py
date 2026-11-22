@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import random
 from datetime import date, timedelta
-from pathlib import Path
 
 import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.common.config import settings
-from src.common.db import Base, engine
+from src.common.db import engine
 from src.models import (
     Category,
     Compatibility,
@@ -141,7 +140,7 @@ def seed_database(reset: bool = True) -> SeedStats:
         documents: dict[int, list[Document]] = {}
         for category in categories:
             docs = []
-            for idx, (doc_type, label) in enumerate(DOC_TYPES):
+            for _idx, (doc_type, label) in enumerate(DOC_TYPES):
                 doc = Document(
                     title=f"{category.name} {label}",
                     doc_type=doc_type,
@@ -162,7 +161,7 @@ def seed_database(reset: bool = True) -> SeedStats:
         specs: list[PartSpecification] = []
         part_rows: list[dict] = []
 
-        for cat_index, (definition, category) in enumerate(zip(CATEGORY_DEFS, categories)):
+        for cat_index, (definition, category) in enumerate(zip(CATEGORY_DEFS, categories, strict=False)):
             cat_parts: list[Part] = []
             spec_doc = documents[category.id][2]
             for seq in range(PARTS_PER_CATEGORY):
@@ -313,7 +312,7 @@ def seed_database(reset: bool = True) -> SeedStats:
                         Compatibility(
                             part_id=part.id,
                             related_part_id=peer.id,
-                            relationship="compatible",
+                            relationship_type="compatible",
                             confidence=confidence,
                             source="synthetic-compatibility-bulletin",
                             source_document_id=bulletin.id,
@@ -330,7 +329,7 @@ def seed_database(reset: bool = True) -> SeedStats:
                         Compatibility(
                             part_id=replacement.id,
                             related_part_id=old.id,
-                            relationship="supersedes",
+                            relationship_type="supersedes",
                             confidence=0.96,
                             source="synthetic-supersession-notice",
                             source_document_id=doc.id,
@@ -341,7 +340,7 @@ def seed_database(reset: bool = True) -> SeedStats:
                         Compatibility(
                             part_id=old.id,
                             related_part_id=replacement.id,
-                            relationship="replaces",
+                            relationship_type="replaces",
                             confidence=0.9,
                             source="synthetic-supersession-notice",
                             source_document_id=doc.id,
@@ -390,7 +389,7 @@ def seed_database(reset: bool = True) -> SeedStats:
                 draws = np.where(mask, 0, draws)
             else:
                 draws = rng.poisson(lam)
-            for d, qty in zip(dates, draws):
+            for d, qty in zip(dates, draws, strict=False):
                 demand_rows.append({"part_id": part.id, "date": d, "quantity": int(qty)})
         for i in range(0, len(demand_rows), 20000):
             session.bulk_insert_mappings(DemandHistory, demand_rows[i : i + 20000])
@@ -473,8 +472,8 @@ def _build_chunks(
             lines.append(f"{part.part_number} ({part.name}) — {spec_text}")
         text = (
             f"{category.name} family {family_key}. Catalogue entries: " + "; ".join(lines) + ". "
-            f"Cross-reference the part number, key dimensions and mounting pattern before "
-            f"fitting. Torque values are listed in the maintenance guide."
+            "Cross-reference the part number, key dimensions and mounting pattern before "
+            "fitting. Torque values are listed in the maintenance guide."
         )
         if doc.doc_type == "compatibility_bulletin":
             text += (
