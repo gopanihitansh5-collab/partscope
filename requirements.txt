@@ -1,0 +1,25 @@
+# API and domain runtime
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+sqlalchemy>=2.0
+alembic>=1.13
+httpx>=0.27
+python-multipart>=0.0.9
+structlog>=24.1
+tenacity>=8.3
+orjson>=3.10
+
+# Data / ML baseline
+numpy>=1.26
+pillow>=10.3
+scikit-learn>=1.4
+joblib>=1.4
+
+# Agent orchestration
+langgraph>=0.2
+langchain-core>=0.3
+
+# Observability
+prometheus-client>=0.20

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Data and artifacts
+data/*.db
+data/*.db-*
+data/raw/
+artifacts/
+mlruns/
+uploads/
+!data/.gitkeep
+!artifacts/.gitkeep
+!uploads/.gitkeep
+
+# Node
+node_modules/
+.next/
+out/
+apps/web/.next/
+apps/web/node_modules/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Internal planning notes (not published)
+INDUSTRIAL_PARTS_INTELLIGENCE_PLATFORM_PLAN.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
